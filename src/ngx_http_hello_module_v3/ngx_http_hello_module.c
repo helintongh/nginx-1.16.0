@@ -1,6 +1,13 @@
 //
 // Created by helintong on 2/4/21.
 //
+/*
+request method
+request URI/URL
+request protocol
+request header_in 原始请求头 headers_in 格式化后的请求头
+request body 请求的body 
+*/
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
@@ -63,22 +70,48 @@ ngx_http_hello(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
 {
-    // 1. 处理http的header
-    /* 为了处理客户端请求的请求体，nginx提供了ngx_http_read_client_request_body(r, post_handler)和ngx_http_discard_request_body(r)函数。
-        第一个函数读取请求正文，并通过request_body请求字段使其可用。
-        第二个函数指示nginx丢弃(读取和忽略)请求体。每个请求都必须调用其中一个函数。
-        通常，内容处理程序会有这两个函数的调用。
-    */
-    // 这里直接丢弃请求体
-    ngx_int_t rc = ngx_http_discard_request_body(r);
+
+	ngx_int_t rc = NGX_OK;
+    // ngx_int_t rc = ngx_http_discard_request_body(r); // 不丢弃body体
     if(rc != NGX_OK)
     {
         return rc;
     }
-    // ngx_http_request_t *r是接收的http请求结构,与此同时它也保存返回给客户端
+
+    ngx_str_t content;
+
+    /* 1. 获取http协议版本号,看效果去掉注释,后面亦然 */
+    // content = r->http_protocol;
+    // 下面才是常用的方法
+    /*
+	switch(r->http_version)
+	{
+		case NGX_HTTP_VERSION_11:
+			break;
+		case NGX_HTTP_VERSION_9:
+			break
+	}
+    */
+    /* end of part 1 */
+
+    /* 2. http原始请求头获取*/
+    // content.data = r->header_in->start;
+    // content.len = r->header_in->end - r->header_in->start;
+    /*
+     part 2 代码会让你能够通过浏览器下载原始请求头信息多用于排查问题
+     end of part 2
+     */
+    /* 3. 获取格式化后的http头信息 */
+    // content = r->headers_in.host->value; // 获取host的值存到content中
+    /* end of part 3*/
+
+    /* 4. 获取body体的内容,注此时要把html中的login.html方法改为POST*/
+    content.data = r->connection->buffer->pos;
+    content.len = r->connection->buffer->last - r->connection->buffer->pos;
+    /* end of part 4*/
+
     ngx_str_t type = ngx_string("text/plain");
-    ngx_str_t content = ngx_string("hello world!");
-    // r的headers_out的内容就是返回给客户端的http头的内容
+    //ngx_str_t content = ngx_string("hello world!");
     r->headers_out.content_type = type;
     r->headers_out.content_length_n = content;
     r->headers_out.status = NGX_HTTP_OK;
@@ -88,14 +121,6 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
         return rc;
     }
 
-    // 2.处理http的body体
-
-    // http body要写入out里面(通过chain串起来)
-    /* 对chain链要做两个操作,
-        1. 挂一个结点 out.buf = b;
-        2. 标志指针域 out.next = NULL; 
-    */
-    /* 填充结点内容 */
     // ngx_create_temp_buf相当于malloc,第一个参数是指定内存池,第二个参数是内容大小
     ngx_buf_t *b = ngx_create_temp_buf(r->pool, content.len);
     if(NULL == b)

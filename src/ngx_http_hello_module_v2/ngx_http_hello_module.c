@@ -63,22 +63,53 @@ ngx_http_hello(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
 {
-    // 1. 处理http的header
-    /* 为了处理客户端请求的请求体，nginx提供了ngx_http_read_client_request_body(r, post_handler)和ngx_http_discard_request_body(r)函数。
-        第一个函数读取请求正文，并通过request_body请求字段使其可用。
-        第二个函数指示nginx丢弃(读取和忽略)请求体。每个请求都必须调用其中一个函数。
-        通常，内容处理程序会有这两个函数的调用。
-    */
-    // 这里直接丢弃请求体
+
     ngx_int_t rc = ngx_http_discard_request_body(r);
     if(rc != NGX_OK)
     {
         return rc;
     }
-    // ngx_http_request_t *r是接收的http请求结构,与此同时它也保存返回给客户端
+
+    ngx_str_t content;
+    /* 1.获取http请求的是什么方法 */
+    // 这里有一个坑点,提交表单的情况nginx转换过后只有GET和POST请求
+    switch(r->method)
+    {
+        case NGX_HTTP_PUT:
+            ngx_str_set(&content, "PUT");
+            break;
+        case NGX_HTTP_GET:
+            ngx_str_set(&content, "GET");
+            break;
+        case NGX_HTTP_POST:
+            ngx_str_set(&content, "POST");
+            break;
+        default:
+            ngx_str_set(&content, "OTHERS");
+    }
+    /* part 1 end */
+
+    /* 注:与uri有关的需要把前端的POST方法改成GET方法。
+            uri参数GET获取的仅需header。
+            POST则把数据放到body里面取不到。
+    */
+    /* 2. 获取请求的uri,
+        注:我使用的是同一变量content要看效果要注释非2 part的代码,后面的part亦然 */
+    // contenx = r->uri; // 该语句只能获取到最基础的uri没法获取uri参数
+    // content.data = r->uri_start;
+    // content.len = r->uri_end - r->uri_start;
+    /* part 2 end */
+
+    /* 3. 获取uri参数 */
+    // content = r->args; // 获取所有参数
+    content.data = r->args_start;
+    content.len = r->uri_end - r->args_start;
+    /* part 3 end */
+
+
+
     ngx_str_t type = ngx_string("text/plain");
-    ngx_str_t content = ngx_string("hello world!");
-    // r的headers_out的内容就是返回给客户端的http头的内容
+    //ngx_str_t content = ngx_string("hello world!");
     r->headers_out.content_type = type;
     r->headers_out.content_length_n = content;
     r->headers_out.status = NGX_HTTP_OK;
@@ -88,14 +119,6 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
         return rc;
     }
 
-    // 2.处理http的body体
-
-    // http body要写入out里面(通过chain串起来)
-    /* 对chain链要做两个操作,
-        1. 挂一个结点 out.buf = b;
-        2. 标志指针域 out.next = NULL; 
-    */
-    /* 填充结点内容 */
     // ngx_create_temp_buf相当于malloc,第一个参数是指定内存池,第二个参数是内容大小
     ngx_buf_t *b = ngx_create_temp_buf(r->pool, content.len);
     if(NULL == b)
