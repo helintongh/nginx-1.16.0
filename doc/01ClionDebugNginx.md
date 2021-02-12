@@ -187,11 +187,11 @@ python makefile2cmakelist.py CMakeLists.txt objs/Makefile
 
 static char *ngx_http_hello(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r);
-
+// say_hello是写在配置文件中的
 static ngx_command_t  ngx_http_hello_commands[] = {
 
         { ngx_string("say_hello"),
-          NGX_HTTP_LOC_CONF|NGX_CONF_NOARGS,
+          NGX_HTTP_LOC_CONF|NGX_CONF_NOARGS, // 让其允许配置到locatino中,没有参数
           ngx_http_hello,
           0,
           0,
@@ -202,7 +202,7 @@ static ngx_command_t  ngx_http_hello_commands[] = {
 
 
 static ngx_http_module_t  ngx_http_hello_module_ctx = {
-        NULL,    /* preconfiguration */
+        NULL,                                   /* preconfiguration */
         NULL,                                  /* postconfiguration */
 
         NULL,                                  /* create main configuration */
@@ -240,11 +240,23 @@ ngx_http_hello(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     return NGX_CONF_OK;
 }
-
+// 用来处理http请求的函数
 static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
 {
     ngx_chain_t        out;
     
     return ngx_http_output_filter(r, &out);
+}
+```
+
+```nginx.conf
+http{
+    server {
+    ...
+        location / {
+            say_hello;
+        }
+    }
+    ...
 }
 ```
