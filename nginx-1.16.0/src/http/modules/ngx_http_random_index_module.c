@@ -9,7 +9,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-
+// 存储参数的变量
 typedef struct {
     ngx_flag_t  enable;
 } ngx_http_random_index_loc_conf_t;
@@ -25,23 +25,23 @@ static void *ngx_http_random_index_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_random_index_merge_loc_conf(ngx_conf_t *cf,
     void *parent, void *child);
 
-
+// 配置命令是random_index
 static ngx_command_t  ngx_http_random_index_commands[] = {
 
     { ngx_string("random_index"),
       NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_random_index_loc_conf_t, enable),
+      ngx_conf_set_flag_slot, // 回调处理flag的参数,无参这里自己处理
+      NGX_HTTP_LOC_CONF_OFFSET,// 找到命令的初始位置,无参是0
+      offsetof(ngx_http_random_index_loc_conf_t, enable),// 找到命令的偏移量,无参是0
       NULL },
 
       ngx_null_command
 };
 
-
+// 无参模块全为NULL
 static ngx_http_module_t  ngx_http_random_index_module_ctx = {
     NULL,                                  /* preconfiguration */
-    ngx_http_random_index_init,            /* postconfiguration */
+    ngx_http_random_index_init,            /* postconfiguration 所有配置结束后的回调函数 */
 
     NULL,                                  /* create main configuration */
     NULL,                                  /* init main configuration */
@@ -69,7 +69,7 @@ ngx_module_t  ngx_http_random_index_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+// random_index指令的处理函数
 static ngx_int_t
 ngx_http_random_index_handler(ngx_http_request_t *r)
 {
@@ -269,7 +269,14 @@ ngx_http_random_index_error(ngx_http_request_t *r, ngx_dir_t *dir,
     return NGX_HTTP_INTERNAL_SERVER_ERROR;
 }
 
+// 创建当前配置,就是把
+/*
+typedef struct {
+    ngx_flag_t  enable;
+} ngx_http_random_index_loc_conf_t;
 
+给赋值
+*/
 static void *
 ngx_http_random_index_create_loc_conf(ngx_conf_t *cf)
 {
@@ -285,7 +292,7 @@ ngx_http_random_index_create_loc_conf(ngx_conf_t *cf)
     return conf;
 }
 
-
+// 多个配置都有random_index,需要相应的处理
 static char *
 ngx_http_random_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
@@ -303,15 +310,15 @@ ngx_http_random_index_init(ngx_conf_t *cf)
 {
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
-
+	// 找到random_index配置项所属的配置块
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_CONTENT_PHASE].handlers);
     if (h == NULL) {
         return NGX_ERROR;
     }
-
-    *h = ngx_http_random_index_handler;
+	// 设置处理函数,发现了配置执行ngx_http_random_index_handler函数回调
+    *h = ngx_http_random_index_handler; 
 
     return NGX_OK;
 }
