@@ -40,7 +40,7 @@ static ngx_command_t ngx_http_download_commands[] =
  
     ngx_null_command
 };
-// 回调函数上下文设置->用的很少 
+// 回调函数上下文设置-> 设置相应的函数来处理配置变量(无参就全为NULL)
 static ngx_http_module_t  ngx_http_download_module_ctx =
 {
     NULL,                  /* preconfiguration */
@@ -83,7 +83,7 @@ static char *ngx_http_download(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
  
     /* http框架在处理用户请求进行到NGX_HTTP_CONTENT_PHASE阶段时。假设
       请求的主机域名、URI与mytest配置项所在的配置块相匹配，就将调用我们
-      实现的ngx_http_mytest_handler方法处理这个请求
+      实现的ngx_http_download_handler方法处理这个请求
     */
     clcf->handler = ngx_http_download_handler;
  
