@@ -74,7 +74,9 @@ ngx_http_helloex_init(ngx_conf_t *cf)
     ngx_http_core_main_conf_t  *cmcf;
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
-
+    /* 将当前的数组分配新的空间,赋给h。
+    把ngx_http_helloex_handler变为全局处理函数,
+        无论访问什么url当前代码都会运行 */
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_CONTENT_PHASE].handlers);
     if (h == NULL) {
         return NGX_ERROR;
