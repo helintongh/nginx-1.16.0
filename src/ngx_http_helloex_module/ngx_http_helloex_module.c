@@ -4,13 +4,13 @@
 /*
 配置块
 http {
-	server{
-	...
-	location /hello {
-		say_helloex helintong; 
-	}
-	...
-	}
+    server{
+    ...
+    location /hello {
+        say_helloex helintong; 
+    }
+    ...
+    }
 }
 上述访问/hello就会返回helintong
 */
@@ -29,7 +29,7 @@ static ngx_command_t  ngx_http_helloex_commands[] = {
 
         { ngx_string("say_helloex"),
           NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,   // 代表放在http的location块,有一个参数
-          ngx_conf_set_str_slot,	// 调用系统函数参数处理
+          ngx_conf_set_str_slot,    // 调用系统函数参数处理
           NGX_HTTP_LOC_CONF_OFFSET,
           offsetof(ngx_http_helloex_conf_t, hello_str),
           NULL },
@@ -125,7 +125,7 @@ static ngx_int_t ngx_http_helloex_handler(ngx_http_request_t *r)
     if (b == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
-
+    // reponse中的内容付给要挂到chain的结点b中
     ngx_memcpy(b->pos, response.data, response.len);
     b->last = b->pos + response.len;
     b->last_buf = 1;
