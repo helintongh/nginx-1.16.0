@@ -12,7 +12,7 @@ nginx的调式是困难的因为它是事件驱动的服务器,那么采用更�
 |SHIFT+F8|跳出函数|
 |F9|恢复到正常运行|
 
-clion的断电管理和变量监控
+clion的断点管理和变量监控
 
 鼠标点相应行左侧即可下断点,红点出现断点就生效了。
 
@@ -249,7 +249,7 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
 }
 ```
 
-```nginx.conf
+```bash
 http{
     server {
     ...
