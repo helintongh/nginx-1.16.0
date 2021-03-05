@@ -176,7 +176,7 @@ python makefile2cmakelist.py CMakeLists.txt objs/Makefile
 
 看别人的源码是最好的学习方式。所以关注ngx_http_stub_status_module.c,这一个nginx的原生代码就能明白。(路径在nginx/src/http/modules/ngx_http_stub_status_module.c)
 
-根据修改可以变为如下代码
+修改掉它的业务代码可以变为如下代码
 ```c
 //
 // Created by helintong on 2/4/21.
@@ -249,6 +249,15 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
 }
 ```
 
+可以看到该源文件分为这几个部分。
+
+1. 模块配置结构(无参就没有,比如上面就没有)
+2. 模块配置指令 `ngx_command_t`
+3. 模块上下文结构 `ngx_http_module_t`
+4. 模块的上下文定义 `ngx_http_hello_module_ctx`
+5. 模块的挂载函数
+6. 真正的处理函数。
+
 ```bash
 http{
     server {
@@ -260,3 +269,158 @@ http{
     ...
 }
 ```
+
+然后通过上面把该模块编入并且打断点,可以发现nginx确实卡在了断点处。
+
+接下来我们来扩展这一个函数,让其实现打印hello world。
+
+[源代码路径](../src/ngx_http_hello_module/ngx_http_hello_module.c) 具体看源代码吧,这段代码对挂载函数写的不够详细会在下一章中详解。
+
+```c
+//
+// Created by helintong on 2/4/21.
+//
+#include <ngx_config.h>
+#include <ngx_core.h>
+#include <ngx_http.h>
+
+static char *ngx_http_hello(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r);
+
+static ngx_command_t  ngx_http_hello_commands[] = {
+
+        { ngx_string("say_hello"),
+          NGX_HTTP_LOC_CONF|NGX_CONF_NOARGS,
+          ngx_http_hello,
+          0,
+          0,
+          NULL },
+
+        ngx_null_command
+};
+
+
+static ngx_http_module_t  ngx_http_hello_module_ctx = {
+        NULL,    /* preconfiguration */
+        NULL,                                  /* postconfiguration */
+
+        NULL,                                  /* create main configuration */
+        NULL,                                  /* init main configuration */
+
+        NULL,                                  /* create server configuration */
+        NULL,                                  /* merge server configuration */
+
+        NULL,                                  /* create location configuration */
+        NULL                                   /* merge location configuration */
+};
+
+ngx_module_t  ngx_http_hello_module = {
+        NGX_MODULE_V1,
+        &ngx_http_hello_module_ctx,      /* module context */
+        ngx_http_hello_commands,              /* module directives */
+        NGX_HTTP_MODULE,                       /* module type */
+        NULL,                                  /* init master */
+        NULL,                                  /* init module */
+        NULL,                                  /* init process */
+        NULL,                                  /* init thread */
+        NULL,                                  /* exit thread */
+        NULL,                                  /* exit process */
+        NULL,                                  /* exit master */
+        NGX_MODULE_V1_PADDING
+};
+
+static char *
+ngx_http_hello(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_core_loc_conf_t  *clcf;
+    /* 首先找到say_hello配置项所属的配置块，clcf貌似是location块内的数据
+     结构，事实上不然。它能够是main、srv或者loc级别配置项，也就是说在每一个
+     http{}和server{}内也都有一个ngx_http_core_loc_conf_t结构体 */
+    clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+
+    /* http框架在处理用户请求进行到NGX_HTTP_CONTENT_PHASE阶段时。假设
+      请求的主机域名、URI与say_hello配置项所在的配置块相匹配，就将调用我们
+      实现的ngx_http_hello_handler方法处理这个请求
+    */
+    clcf->handler = ngx_http_hello_handler;
+
+    return NGX_CONF_OK;
+}
+
+static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
+{
+    // 1. 处理http的header
+    /* 为了处理客户端请求的请求体，nginx提供了ngx_http_read_client_request_body(r, post_handler)和ngx_http_discard_request_body(r)函数。
+        第一个函数读取请求正文，并通过request_body请求字段使其可用。
+        第二个函数指示nginx丢弃(读取和忽略)请求体。每个请求都必须调用其中一个函数。
+        通常，内容处理程序会有这两个函数的调用。
+    */
+    // 这里直接丢弃请求体
+    ngx_int_t rc = ngx_http_discard_request_body(r);
+    if(rc != NGX_OK)
+    {
+        return rc;
+    }
+    // ngx_http_request_t *r是接收的http请求结构,与此同时它也保存返回给客户端
+    ngx_str_t type = ngx_string("text/plain");
+    ngx_str_t content = ngx_string("hello world!");
+    // r的headers_out的内容就是返回给客户端的http头的内容
+    r->headers_out.content_type = type;
+    r->headers_out.content_length_n = content.len;
+    r->headers_out.status = NGX_HTTP_OK;
+    rc = ngx_http_send_header(r); // 该函数发送http头(r的内容)给客户端
+    if(rc != NGX_OK)
+    {
+        return rc;
+    }
+
+    // 2.处理http的body体
+
+    // http body要写入out里面(通过chain串起来)
+    /* 对chain链要做两个操作,
+        1. 挂一个结点 out.buf = b;
+        2. 标志指针域 out.next = NULL; 
+    */
+    /* 填充结点内容 */
+    // ngx_create_temp_buf相当于malloc,第一个参数是指定内存池,第二个参数是内容大小
+    ngx_buf_t *b = ngx_create_temp_buf(r->pool, content.len);
+    if(NULL == b)
+    {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    // 复制内容到b结点里,参数为b起始位置,content内容,数据长度
+    ngx_memcpy(b->pos, content.data, content.len);
+    b->last = b->pos + content.len; // 指定结点b末尾
+    b->last_buf = 1; // 指明只有这一块buf没有分块
+
+    ngx_chain_t        out;
+    out.buf = b; //
+    out.next = NULL; // 该示例只有一个结点
+    
+    return ngx_http_output_filter(r, &out);
+}
+```
+
+由上面可以知道handler模块开发总共分为这三步:
+
+1. 编写模块基本结构。包括模块的定义，模块上下文结构，模块的配置结构等。
+2. 实现handler的挂载函数。根据模块的需求选择正确的挂载方式。
+3. 编写handler处理函数。模块的功能主要通过这个函数来完成。
+
+### config文件的编写
+
+```config
+ngx_addon_name=ngx_http_hello_module
+HTTP_MODULES="$HTTP_MODULES ngx_http_hello_module"
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_hello_module.c"
+```
+
+注意只需要在原来把ngx_http_hello_module.c改为上面即可。运行nginx然后关闭防火墙可以看到展示。
+
+![代码结构不变](pic/01/ret2.png)
+
+结果如下,可以看到通过浏览器显示出了hello world:
+
+![nginx显示](pic/01/ret1.png)
+
+下一章 [handler模块实战](./02hello_handler.md)
