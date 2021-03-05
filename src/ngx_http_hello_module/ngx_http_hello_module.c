@@ -87,7 +87,7 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
     ngx_str_t content = ngx_string("hello world!");
     // r的headers_out的内容就是返回给客户端的http头的内容
     r->headers_out.content_type = type;
-    r->headers_out.content_length_n = content;
+    r->headers_out.content_length_n = content.len;
     r->headers_out.status = NGX_HTTP_OK;
     rc = ngx_http_send_header(r); // 该函数发送http头(r的内容)给客户端
     if(rc != NGX_OK)

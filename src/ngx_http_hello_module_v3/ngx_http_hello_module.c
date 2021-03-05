@@ -6,7 +6,7 @@ request method
 request URI/URL
 request protocol
 request header_in 原始请求头 headers_in 格式化后的请求头
-request body 请求的body 
+request body 请求的body
 */
 #include <ngx_config.h>
 #include <ngx_core.h>
@@ -71,7 +71,7 @@ ngx_http_hello(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
 {
 
-	ngx_int_t rc = NGX_OK;
+    ngx_int_t rc = NGX_OK;
     // ngx_int_t rc = ngx_http_discard_request_body(r); // 不丢弃body体
     if(rc != NGX_OK)
     {
@@ -84,13 +84,13 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
     // content = r->http_protocol;
     // 下面才是常用的方法
     /*
-	switch(r->http_version)
-	{
-		case NGX_HTTP_VERSION_11:
-			break;
-		case NGX_HTTP_VERSION_9:
-			break
-	}
+    switch(r->http_version)
+    {
+        case NGX_HTTP_VERSION_11:
+            break;
+        case NGX_HTTP_VERSION_9:
+            break
+    }
     */
     /* end of part 1 */
 
@@ -102,7 +102,7 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
      end of part 2
      */
     /* 3. 获取格式化后的http头信息 */
-    // content = r->headers_in.host->value; // 获取host的值存到content中
+     //content = r->headers_in.host->value; // 获取host的值存到content中
     /* end of part 3*/
 
     /* 4. 获取body体的内容,注此时要把html中的login.html方法改为POST*/
@@ -113,7 +113,7 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
     ngx_str_t type = ngx_string("text/plain");
     //ngx_str_t content = ngx_string("hello world!");
     r->headers_out.content_type = type;
-    r->headers_out.content_length_n = content;
+    r->headers_out.content_length_n = content.len;
     r->headers_out.status = NGX_HTTP_OK;
     rc = ngx_http_send_header(r); // 该函数发送http头(r的内容)给客户端
     if(rc != NGX_OK)
@@ -135,6 +135,6 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
     ngx_chain_t        out;
     out.buf = b; //
     out.next = NULL; // 该示例只有一个结点
-    
+
     return ngx_http_output_filter(r, &out);
 }

@@ -95,15 +95,15 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
     */
     /* 2. 获取请求的uri,
         注:我使用的是同一变量content要看效果要注释非2 part的代码,后面的part亦然 */
-    // contenx = r->uri; // 该语句只能获取到最基础的uri没法获取uri参数
+    // content = r->uri; // 该语句只能获取到最基础的uri没法获取uri参数
     // content.data = r->uri_start;
     // content.len = r->uri_end - r->uri_start;
     /* part 2 end */
 
     /* 3. 获取uri参数 */
     // content = r->args; // 获取所有参数
-    content.data = r->args_start;
-    content.len = r->uri_end - r->args_start;
+    //content.data = r->args_start;
+    //content.len = r->uri_end - r->args_start;
     /* part 3 end */
 
 
@@ -111,7 +111,7 @@ static ngx_int_t ngx_http_hello_handler(ngx_http_request_t *r)
     ngx_str_t type = ngx_string("text/plain");
     //ngx_str_t content = ngx_string("hello world!");
     r->headers_out.content_type = type;
-    r->headers_out.content_length_n = content;
+    r->headers_out.content_length_n = content.len;
     r->headers_out.status = NGX_HTTP_OK;
     rc = ngx_http_send_header(r); // 该函数发送http头(r的内容)给客户端
     if(rc != NGX_OK)
