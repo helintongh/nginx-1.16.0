@@ -70,7 +70,7 @@ static void *ngx_http_helloex_create_loc_conf(ngx_conf_t *cf)
 
     return mycf;
 }
-// 合并不同级参数的
+// 合并不同级参数的的处理函数
 static char *
 ngx_http_helloex_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
