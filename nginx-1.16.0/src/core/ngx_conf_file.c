@@ -1030,15 +1030,15 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t        *value;
     ngx_flag_t       *fp;
     ngx_conf_post_t  *post;
-
+	// 找到配置地址
     fp = (ngx_flag_t *) (p + cmd->offset);
 
     if (*fp != NGX_CONF_UNSET) {
         return "is duplicate";
     }
-
+	// cf找到参数然后找到相应的值,value[0]是命令本身
     value = cf->args->elts;
-
+	// 字符串比对是on还是off
     if (ngx_strcasecmp(value[1].data, (u_char *) "on") == 0) {
         *fp = 1;
 
@@ -1052,7 +1052,7 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                      value[1].data, cmd->name.data);
         return NGX_CONF_ERROR;
     }
-
+	// 判断cmd的post有无值,一般没有值
     if (cmd->post) {
         post = cmd->post;
         return post->post_handler(cf, post, fp);
@@ -1061,7 +1061,7 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+// 处理配置的字符串
 char *
 ngx_conf_set_str_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1088,7 +1088,7 @@ ngx_conf_set_str_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+// 同一块相同配置形成的数组解析函数
 char *
 ngx_conf_set_str_array_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
