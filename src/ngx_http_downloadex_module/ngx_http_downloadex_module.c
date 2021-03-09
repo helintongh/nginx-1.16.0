@@ -188,16 +188,3 @@ static ngx_int_t ngx_http_downloadex_handler(ngx_http_request_t *r)
     //最后一步发送包体，http框架会调用ngx_http_finalize_request方法
     return ngx_http_output_filter(r, &out);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
