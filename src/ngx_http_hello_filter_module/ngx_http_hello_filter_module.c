@@ -4,7 +4,7 @@
 
 static ngx_int_t ngx_http_hello_filter_init(ngx_conf_t *cf);
 static ngx_int_t ngx_http_hello_filter_header_filter(ngx_http_request_t *r);
-static ngx_int_t ngx_http_hello_filter_body_filter(ngx_http_request_t *r, ngx_chain_t *in);
+static ngx_int_t ngx_http_myfilter_filter_body_filter(ngx_http_request_t *r, ngx_chain_t *in);
 static char *ngx_http_hello_filter(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 // 过滤模块链表入口
 static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
@@ -54,13 +54,13 @@ ngx_module_t  ngx_http_hello_filter_module = {
 
 static ngx_int_t ngx_http_hello_filter_init(ngx_conf_t *cf)
 {
-	// ngx_http_top_header_filter链表表头
+	// ngx_http_top_header_filter链表表头,插入到头部处理方法链表的首部
 	ngx_http_next_header_filter = ngx_http_top_header_filter;
 	// ngx_http_hello_filter_header_filter函数占据表头并执行
 	ngx_http_top_header_filter = ngx_http_hello_filter_header_filter;
-
+	// 插入到包体处理方法链表的首部
 	ngx_http_next_body_filter = ngx_http_top_body_filter;
-	ngx_http_top_body_filter = ngx_htttp_hello_filter_body_filter;
+	ngx_http_top_body_filter = ngx_http_myfilter_filter_body_filter;
 
 	return NGX_OK;
 }
@@ -120,20 +120,26 @@ static ngx_int_t ngx_http_hello_filter_header_filter(ngx_http_request_t *r)
 3. 申请内存,并存储前缀内容
 4. 挂载到处理链表中并返回链表
 */
-static ngx_int_t ngx_http_hello_filter_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
+static ngx_int_t ngx_http_myfilter_filter_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
 	ngx_http_hello_filter_ctx_t *ctx; // 定义上下文
 	ctx = ngx_http_get_module_ctx(r, ngx_http_hello_filter_module);// 取出上下文
+	/* 如果获取不到上下文,或者上下文结构体中的hello_filter为0或者2,都不会加前缀,
+			这里直接交给下一个HTTP过滤模块处理*/
 	if(ctx == NULL || ctx->add_prefix != 1)// 是否为空或已经处理过
 	{
 		return ngx_http_next_body_filter(r, in); // 走下一条
 	}
+	// 设置为2,这样即使ngx_http_hello_filter_body_filter再次回调时,也不会重复添加前缀
 	ctx->add_prefix = 2;// 没处理过赋值为2
 	ngx_buf_t *b = ngx_create_temp_buf(r->pool, filter_prefix.len);
+	// 将ngx_buf_t中的指针正确地指向字符串
 	b->start = b->pos = filter_prefix.data;
 	b->last = b->pos + filter_prefix.len;
+	// 从请求的内存池中生成ngx_chain_t链表,将刚分配的ngx_buf_t设置到buf成员中,并将它添加到原先待发送的HTTP包体前
 	ngx_chain_t *cl = ngx_alloc_chain_link(r->pool);
 	cl->buf = b;
 	cl->next = in;
+	// 调用下一个模块的HTTP包体处理方法,注意,这时传入的是新生成的cl链表
 	return ngx_http_next_body_filter(r, cl);
 }
