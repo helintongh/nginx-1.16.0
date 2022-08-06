@@ -1,7 +1,18 @@
-# NginxDevelopment
-用来学习二次开发nginx以及nginx源码剖析的笔记。
+## NginxDevelopment
 
-nginx第三方开发基础:
+### nginx插件开发:
+
+[nginx基础到编译](doc/basic.md)
+
+[http协议基础以及利用curl测试开发插件的办法](doc/http_and_test.md)
+
+[开发http 过滤模块](doc/http_filter_dev.md)
+
+### 插件开发源码分析
+
+### nginx源码分析
+
+### 旧总结:nginx第三方开发基础:
 
 [利用clion开发nginx](doc/01ClionDebugNginx.md)
 
