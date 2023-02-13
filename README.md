@@ -2,7 +2,7 @@
 
 ### nginx插件开发:
 
-[nginx基础到编译](doc/basic.md)
+[nginx基础到编译到vscode单步调试的方法](doc/basic.md)
 
 [http协议基础以及利用curl测试开发插件的办法](doc/http_and_test.md)
 
